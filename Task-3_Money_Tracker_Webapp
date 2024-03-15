@@ -1,0 +1,197 @@
+//HTML (index.html):
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Tracker</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <h1>Money Tracker</h1>
+    <div id="transactions">
+        <!-- Transactions will be dynamically added here -->
+    </div>
+    <form id="transaction-form">
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" required>
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" name="amount" required>
+        <label for="type">Type:</label>
+        <select id="type" name="type" required>
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+        </select>
+        <button type="submit">Add Transaction</button>
+    </form>
+
+    <script src="/app.js"></script>
+</body>
+</html>
+
+//CSS (styles.css):
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+}
+
+#transaction-form {
+    display: flex;
+    flex-direction: column;
+    max-width: 300px;
+    margin: 20px auto;
+}
+
+#transaction-form label {
+    margin-bottom: 5px;
+}
+
+#transaction-form input,
+#transaction-form select {
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+#transaction-form button {
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#transactions {
+    margin-top: 20px;
+}
+
+.transaction {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.transaction.expense {
+    border-color: #ff6347;
+}
+
+.transaction.income {
+    border-color: #32cd32;
+}
+
+
+//JavaScript (app.js):
+document.addEventListener('DOMContentLoaded', function() {
+    const transactionsContainer = document.getElementById('transactions');
+    const transactionForm = document.getElementById('transaction-form');
+
+    // Function to fetch and display transactions
+    function fetchTransactions() {
+        fetch('/transactions')
+            .then(response => response.json())
+            .then(transactions => {
+                transactionsContainer.innerHTML = '';
+                transactions.forEach(transaction => {
+                    const transactionDiv = document.createElement('div');
+                    transactionDiv.classList.add('transaction', transaction.type);
+                    transactionDiv.innerHTML = `
+                        <p><strong>${transaction.title}</strong>: $${transaction.amount.toFixed(2)}</p>
+                    `;
+                    transactionsContainer.appendChild(transactionDiv);
+                });
+            })
+            .catch(error => console.error('Error fetching transactions:', error));
+    }
+
+    // Fetch transactions on page load
+    fetchTransactions();
+
+    // Event listener for form submission
+    transactionForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(transactionForm);
+        const title = formData.get('title');
+        const amount = formData.get('amount');
+        const type = formData.get('type');
+
+        // Send transaction data to server
+        fetch('/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, amount, type })
+        })
+        .then(response => response.json())
+        .then(() => {
+            // Fetch and display updated transactions
+            fetchTransactions();
+            // Clear form fields
+            transactionForm.reset();
+        })
+        .catch(error => console.error('Error adding transaction:', error));
+    });
+});
+
+
+//Node.js (app.js):
+const express = require('express');
+const mongoose = require('mongoose');
+const Transaction = require('./models/Transaction');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.static('public'));
+app.use(express.json());
+
+mongoose.connect('mongodb://localhost:27017/moneyDB', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('Connected to MongoDB');
+}).catch(err => {
+    console.error('Error connecting to MongoDB:', err);
+});
+
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
+app.get('/transactions', (req, res) => {
+    Transaction.find({})
+        .then(transactions => res.json(transactions))
+        .catch(err => res.status(400).json('Error: ' + err));
+});
+
+app.post('/add', (req, res) => {
+    const { title, amount, type } = req.body;
+    const newTransaction = new Transaction({ title, amount, type });
+    newTransaction.save()
+        .then(() => res.sendStatus(200))
+        .catch(err => res.status(400).json('Error: ' + err));
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+
+//MongoDB (models/Transaction.js):
+const mongoose = require('mongoose');
+
+const transactionSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    amount: { type: Number, required: true },
+    type: { type: String, enum: ['expense', 'income'], required: true },
+    date: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Transaction', transactionSchema);
+
+
+
