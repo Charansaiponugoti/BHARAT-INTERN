@@ -1,190 +1,92 @@
-//HTML:
-!DOCTYPE html>
+//HTML (index.html):
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
-
 <body>
-
-    <header>
-        <h1>My Blog</h1>
-    </header>
-
-    <div class="container">
-        <div id="posts"></div>
-
-        <form id="newPostForm">
-            <h2>New Post</h2>
-            <label for="title">Title:</label>
-            <input type="text" id="title" name="title" required><br>
-            <label for="content">Content:</label>
-            <textarea id="content" name="content" rows="4" required></textarea><br>
-            <button type="submit">Submit</button>
-        </form>
+    <h1>Blog</h1>
+    <div id="posts">
+        <!-- Posts will be dynamically added here -->
     </div>
+    <a href="/newpost" class="btn">New Post</a>
 
-    <script src="app.js"></script>
+    <script src="/app.js"></script>
 </body>
-
 </html>
 
-//CSS:
-@import url('https://fonts.googleapis.com/css2?family=Bree+Serif&family=Caveat:wght@400;700&family=Lobster&family=Monoton&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display+SC:ital,wght@0,400;0,700;1,700&family=Playfair+Display:ital,wght@0,400;0,700;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Source+Sans+Pro:ital,wght@0,400;0,700;1,700&family=Work+Sans:ital,wght@0,400;0,700;1,700&display=swap');
-
+//CSS (styles.css):
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    padding: 0;
+    padding: 20px;
 }
 
-header {
-    background-color: #333;
-    color: #fff;
-    padding: 20px;
+h1 {
     text-align: center;
 }
 
-.container {
-    max-width: 800px;
-    margin: auto;
-    padding: 20px;
-}
-.post {
-    background-color: #f9f9f9;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-#newPostForm {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-}
-
-input[type="text"],
-textarea {
-    width: 100%;
+.btn {
+    display: block;
+    width: 150px;
+    margin: 20px auto;
     padding: 10px;
-    margin: 8px 0;
+    text-align: center;
+    background-color: #007bff;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.post {
     border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
 }
 
-button[type="submit"] {
-    background-color: #4CAF50;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    width: 100%;
+.post .title {
+    font-weight: bold;
 }
 
-button[type="submit"]:hover {
-    background-color: #45a049;
-}
-//jAVASCRIPT:
-const posts = [];
-
-// Function to display posts
-function displayPosts() {
-    const postsDiv = document.getElementById("posts");
-    postsDiv.innerHTML = "";
-
-    posts.forEach(post => {
-        const postDiv = document.createElement("div");
-        postDiv.classList.add("post");
-        postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>`;
-        postsDiv.appendChild(postDiv);
-    });
+.post .content {
+    margin-top: 10px;
 }
 
-// Function to handle form submission
-document.getElementById("newPostForm").addEventListener("submit", function(event) {
-    event.preventDefault();
 
-    const title = document.getElementById("title").value;
-    const content = document.getElementById("content").value;
-
-    // Create new post object
-    const newPost = {
-        title: title,
-        content: content
-    };
-
-    // Add new post to the array
-    posts.push(newPost);
-
-    // Display updated posts
-    displayPosts();
-
-    // Clear form fields
-    document.getElementById("newPostForm").reset();
+//JavaScript (app.js):
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/posts')
+        .then(response => response.json())
+        .then(posts => {
+            const postsContainer = document.getElementById('posts');
+            posts.forEach(post => {
+                const postDiv = document.createElement('div');
+                postDiv.classList.add('post');
+                postDiv.innerHTML = `
+                    <p class="title">${post.title}</p>
+                    <p class="content">${post.content}</p>
+                `;
+                postsContainer.appendChild(postDiv);
+            });
+        })
+        .catch(error => console.error('Error fetching posts:', error));
 });
 
-// Initial display of posts
-displayPosts();
-
-
-//Set Up Project:
-mkdir blog-website
-cd blog-website
-npm init -y
-
-//Install Dependencies:
-npm install express mongoose ejs body-parser
-
-//Directory Structure:
-blog-website/
-├── models/
-│   └── Post.js
-├── public/
-│   └── styles.css
-├── views/
-│   ├── index.ejs
-│   └── newpost.ejs
-├── app.js
-└── package.json
-
-//Model Definition (models/Post.js):
-// models/Post.js
-const mongoose = require('mongoose');
-
-const postSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    content: { type: String, required: true }
-});
-
-module.exports = mongoose.model('Post', postSchema);
-
-//Express Server (app.js):
-// app.js
+//Node.js (app.js):
 const express = require('express');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
 const Post = require('./models/Post');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Set up view engine
-app.set('view engine', 'ejs');
-
-// Middleware
 app.use(express.static('public'));
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/blogDB', {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -194,38 +96,44 @@ mongoose.connect('mongodb://localhost:27017/blogDB', {
     console.error('Error connecting to MongoDB:', err);
 });
 
-// Routes
 app.get('/', (req, res) => {
-    Post.find({}, (err, posts) => {
-        if (err) {
-            console.error('Error fetching posts:', err);
-        } else {
-            res.render('index', { posts: posts });
-        }
-    });
+    res.sendFile(__dirname + '/index.html');
+});
+
+app.get('/posts', (req, res) => {
+    Post.find({})
+        .then(posts => res.json(posts))
+        .catch(err => res.status(400).json('Error: ' + err));
 });
 
 app.get('/newpost', (req, res) => {
-    res.render('newpost');
+    res.sendFile(__dirname + '/newpost.html');
 });
 
 app.post('/newpost', (req, res) => {
-    const post = new Post({
-        title: req.body.title,
-        content: req.body.content
-    });
-    post.save((err) => {
-        if (err) {
-            console.error('Error saving post:', err);
-        } else {
-            res.redirect('/');
-        }
-    });
+    const { title, content } = req.body;
+    const newPost = new Post({ title, content });
+    newPost.save()
+        .then(() => res.redirect('/'))
+        .catch(err => res.status(400).json('Error: ' + err));
 });
 
-// Start server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+//MongoDB (models/Post.js):
+const mongoose = require('mongoose');
+
+const postSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    content: { type: String, required: true }
+});
+
+module.exports = mongoose.model('Post', postSchema);
+
+
+
 
 
