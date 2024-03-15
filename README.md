@@ -1,4 +1,4 @@
-Task_Results
+Tasks ouputs(images) and description given below:
 
 Task-1_Registration_Form:
 
